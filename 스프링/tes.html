@@ -1,0 +1,298 @@
+
+				<div class="head-wrapper">
+					<h1>Design Pattern in Spring</h1>
+			<div class="sc-cIShpX cUTnDC">
+				<div class="sc-tilXH MhfNS">
+					<div class="sc-hEsumM iUiRgx atom-one-light">
+						<p>스프링 내에서 사용되어지는 디자인 패턴에 관한 정리가 잘되어 있는 문서를 확인하여 해당 내용을 해석 및 정리하는 포스팅입니다.</p>
+						<p>원본 : https://www.baeldung.com/spring-framework-design-patterns</p>
+						<h2 id="singleton-pattern">Singleton Pattern</h2>
+						<p>싱글톤 패턴은 애플리케이션 당 객체의 인스턴스를 하나만 생성되도록 하는 메커니즘입니다.</p>
+						<h3 id="singleton-beans">Singleton Beans</h3>
+						<p>기본적으로, 싱글톤은 하나의 애플리케이션에 전역적으로 유니크지만, 스프링에서는 이러한 제약이 약간 풀어집니다.<br />
+							대신에 스프링은 Spring IoC 컨테이너 당 하나의 객체는 싱글톤인 것으로 제한을 둡니다.<br />
+							즉, 스프링에서는 application context 당 하나의 빈만 생성이 가능하다는 것입니다.<br />
+							그러므로, 같은 클래스의 여러개의 객체가 하나의 애플리케이션에 존재하게 하려면 여러개의 컨테이너를 사용해야 합니다.</p>
+						<p><img src="https://media.vlpt.us/images/dev_osj/post/cf8f08f8-bee0-413f-9e57-5d520cd83fd7/image.png" /></p>
+						<h3 id="autowired-singletons">Autowired Singletons</h3>
+						<p>예를 들어, 하나의 application context에서 두 개의 컨트롤러를 만들고 각각 동일한 타입의 빈을 주입한다고 가정하겠습니다.<br />
+							첫번째로, Book 도메인 객체를 관리하는 BookRepository를 만들겠습니다.<br />
+							두번째로, 도서관에서 책의 개수를 반환하는 BookRepository를 사용하는 LibraryController를 만들겠습니다.</p>
+						<pre><code class="language-java"><span class="token annotation punctuation">@RestController</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">LibraryController</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Autowired</span>
+    <span class="token keyword">private</span> <span class="token class-name">BookRepository</span> repository<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@GetMapping</span><span class="token punctuation">(</span><span class="token string">"/count"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token class-name">Long</span> <span class="token function">findCount</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>repository<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> repository<span class="token punctuation">.</span><span class="token function">count</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></code></pre>
+						<p>마지막으로, 책의 ID로 책을 찾는 것과 같이 Book에 관한 구체적인 행동에 관점을 둔 BookController를 만들겠습니다.</p>
+						<pre><code class="language-java"><span class="token annotation punctuation">@RestController</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">BookController</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Autowired</span>
+    <span class="token keyword">private</span> <span class="token class-name">BookRepository</span> repository<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@GetMapping</span><span class="token punctuation">(</span><span class="token string">"/book/{id}"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token class-name">Book</span> <span class="token function">findById</span><span class="token punctuation">(</span><span class="token annotation punctuation">@PathVariable</span> <span class="token keyword">long</span> id<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>repository<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> repository<span class="token punctuation">.</span><span class="token function">findById</span><span class="token punctuation">(</span>id<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></code></pre>
+						<p>이후, 애플리케이션을 시작하고 /count와 /book/1에 GET 요청을 하겠습니다.<br />
+							애플리케이션 결과는 BookRepository 객체가 동일한 객체ID를 가지고 있는 것을 확인할 수 있습니다.</p>
+						<blockquote>
+							<p>com.baeldung.spring.patterns.singleton.BookRepository@3ea9524f<br />
+								com.baeldung.spring.patterns.singleton.BookRepository@3ea9524f</p>
+						</blockquote>
+						<p>LibraryController와 BookController에 있는 BookRepository 객체 ID는 동일한 것이고 스프링은 두 개의 컨트롤러에 동일한 빈을 주입했다는 것을 알 수 있습니다.</p>
+						<p>반대로 BookRepository 빈 인스턴스의 빈 스코프를 singleton에서 prototype으로 @Scope(ConfiguratableBeanFactory.SCOPE_PROTOTYPE)어노테이션을 황용하여 변경한다면 분리된 BookRepository 빈을 생성할 순 있습니다.</p>
+						<br />
+						<h2 id="factory-method-pattern">Factory Method Pattern</h2>
+						<p>팩토리 메서드 패턴은 원하는 객체를 생성하기 위한 추상 메서드가 있는 팩토리 클래스를 수반합니다.</p>
+						<p>종종, 특정 내용을 바탕으로 다른 객체를 만들어야 할 때가 있습니다.<br />
+							예를 들어, 애플리케이션이 vehicle 객체를 만드는 것으로 가정하겠습니다.<br />
+							자연적인 환경에서는 boats를 생성하지만, aerospace 환경에서는 airplanes을 생성해야 합니다.</p>
+						<p><img src="https://media.vlpt.us/images/dev_osj/post/45e3dfd4-1e1b-4b25-930d-08165ceae1fe/image.png" /></p>
+						<p>이것을 해결하기 위해서 각각 원하는 객체를 생성하는 팩토리를 만들고 구체적인 팩토리 메소드로부터 원하는 객체를 반환해주면 됩니다.</p>
+						<h3 id="application-context">Application Context</h3>
+						<p>스프링에서는 이러한 기술을 DI Framework의 뿌리에서 사용합니다.<br />
+							기본적으로, 스프링은 빈을 생성하는 빈 컨테이너를 팩토리로 취급합니다.<br />
+							그러므로, 스프링은 BeanFactory 인터페이스를 빈 커테이너의 추상으로 정의합니다.</p>
+						<pre><code class="language-java"><span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">BeanFactory</span> <span class="token punctuation">{</span>
+
+    <span class="token function">getBean</span><span class="token punctuation">(</span><span class="token class-name">Class</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">T</span><span class="token punctuation">&gt;</span></span> requiredType<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">getBean</span><span class="token punctuation">(</span><span class="token class-name">Class</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">T</span><span class="token punctuation">&gt;</span></span> requiredType<span class="token punctuation">,</span> <span class="token class-name">Object</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> args<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">getBean</span><span class="token punctuation">(</span><span class="token class-name">String</span> name<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">// ...</span>
+<span class="token punctuation">]</span></code></pre>
+						<p>각각의 getBean 메소드들은 빈의 타입과 이름과 같이 메소드에 제공되는 기준을 통해 매칭된 빈을 반환해주는 팩토리 메소드입니다.<br />
+							이후, 앞서 소개한 바와 같이 스프링은 ApplicationContext 인터페이스로 BeanFactoy를 확장합니다.<br />
+							스프링은 XML 파일 혹은 Java 어노테이션과 같은 외부 설정들을 기반으로 빈 컨테이너를 실행시킵니다.<br />
+							AnnotationConfigApplicationContext와 같이 ApplicationContext 클래스를구현하여 사용합니다.<br />
+							이후 BeanFactory 인터페이스로부터 상속 받은 다양한 팩토리 메소드들을 통해 빈을 생성합니다.</p>
+						<ol>
+							<li>간단한 애플리케이션 설정을 만든다.</li>
+						</ol>
+						<pre><code class="language-java"><span class="token annotation punctuation">@Configuration</span>
+<span class="token annotation punctuation">@ComponentScan</span><span class="token punctuation">(</span>basePackageClasses <span class="token operator">=</span> <span class="token class-name">ApplicationConfig</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ApplicationConfig</span> <span class="token punctuation">{</span>
+<span class="token punctuation">}</span></code></pre>
+						<ol start="2">
+							<li>생성자를 받지 않는 간단한 Foo 클래스를 만든다.</li>
+						</ol>
+						<pre><code class="language-java"><span class="token annotation punctuation">@Component</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Foo</span> <span class="token punctuation">{</span>
+<span class="token punctuation">}</span></code></pre>
+						<ol start="3">
+							<li>한개의 생성자를 받는 다른 Bar 클래스를 만든다.</li>
+						</ol>
+						<pre><code class="language-java"><span class="token annotation punctuation">@Component</span>
+<span class="token annotation punctuation">@Scope</span><span class="token punctuation">(</span><span class="token class-name">ConfigurableBeanFactory</span><span class="token punctuation">.</span>SCOPE_PROTOTYPE<span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Bar</span> <span class="token punctuation">{</span>
+
+    <span class="token keyword">private</span> <span class="token class-name">String</span> name<span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> <span class="token class-name">Bar</span><span class="token punctuation">(</span><span class="token class-name">String</span> name<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>name <span class="token operator">=</span> name<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">// Getter ...</span>
+<span class="token punctuation">}</span></code></pre>
+						<ol start="4">
+							<li>ApplicationContext를 구현한 AnnotationConfigApplicationContext 를 통해 빈들을 생성한다.</li>
+						</ol>
+						<pre><code class="language-java"><span class="token annotation punctuation">@Test</span>
+<span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">whenGetSimpleBean_thenReturnConstructedBean</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+
+    <span class="token class-name">ApplicationContext</span> context <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">AnnotationConfigApplicationContext</span><span class="token punctuation">(</span><span class="token class-name">ApplicationConfig</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token class-name">Foo</span> foo <span class="token operator">=</span> context<span class="token punctuation">.</span><span class="token function">getBean</span><span class="token punctuation">(</span><span class="token class-name">Foo</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token function">assertNotNull</span><span class="token punctuation">(</span>foo<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token annotation punctuation">@Test</span>
+<span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">whenGetPrototypeBean_thenReturnConstructedBean</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+
+    <span class="token class-name">String</span> expectedName <span class="token operator">=</span> <span class="token string">"Some name"</span><span class="token punctuation">;</span>
+    <span class="token class-name">ApplicationContext</span> context <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">AnnotationConfigApplicationContext</span><span class="token punctuation">(</span><span class="token class-name">ApplicationConfig</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token class-name">Bar</span> bar <span class="token operator">=</span> context<span class="token punctuation">.</span><span class="token function">getBean</span><span class="token punctuation">(</span><span class="token class-name">Bar</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">,</span> expectedName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token function">assertNotNull</span><span class="token punctuation">(</span>bar<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">assertThat</span><span class="token punctuation">(</span>bar<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token function">is</span><span class="token punctuation">(</span>expectedName<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+						<p>getBean 팩토리 메소드를 사용하여, 클래스 타입만으로 설정한 빈을 생성할 수 있다.</p>
+						<h3 id="외부-설정">외부 설정</h3>
+						<p>이 패턴은 외부 설정을 기반으로 애플리케이션 동작 자체를 변경시킬 수 있기 때문에 여러 목적으로 쓰입니다.<br />
+							만약 애플리케이션에서 주입(autowired)된 객체의 실행을 변경하길 원한다면 사용할 ApplicationContext의 실행만 조정하면 됩니다.<br />
+							<img src="https://media.vlpt.us/images/dev_osj/post/af461735-d263-4c94-bd40-03e41adcbc44/image.png" /></p>
+						<p>예를들어, ClassPathXmlApplicationContext과 같이 AnnotationConfigApplicationContext에서 XML 기반의 설정 클래스로 변경 가능합니다.</p>
+						<pre><code class="language-java"><span class="token annotation punctuation">@Test</span>
+<span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">givenXmlConfiguration_whenGetPrototypeBean_thenReturnConstructedBean</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+
+    <span class="token class-name">String</span> expectedName <span class="token operator">=</span> <span class="token string">"Some name"</span><span class="token punctuation">;</span>
+    <span class="token class-name">ApplicationContext</span> context <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ClassPathXmlApplicationContext</span><span class="token punctuation">(</span><span class="token string">"context.xml"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">// Same test as before ...</span>
+<span class="token punctuation">}</span></code></pre>
+						<br />
+						<h2 id="proxy-pattern">Proxy Pattern</h2>
+						<p>코드에서 프록시 패턴은 하나의 객체(프록시)가 다른 객체(특정 목적 혹은 서비스)를 접근제어가 가능하도록 하는 기술입니다.<br />
+							<img src="https://media.vlpt.us/images/dev_osj/post/879e0217-fd96-47b8-ab1b-5e10fd9d3600/image.png" /></p>
+						<h3 id="transactions">Transactions</h3>
+						<p>프록시를 생성하기 위해 Subject와 Subject에 대한 참조에 대한 동일한 인터페이스를 사용한 객체를 생성합니다.<br />
+							다음으로, 적절한 서브젝에서 프록시를 사용하면 됩니다.<br />
+							스프링에서 빈들은 특정 빈들에 대한 접근을 제어하기 위해 프록시됩니다.</p>
+						<pre><code class="language-java"><span class="token annotation punctuation">@Service</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">BookManager</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Autowired</span>
+    <span class="token keyword">private</span> <span class="token class-name">BookRepository</span> repository<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Transactional</span>
+    <span class="token keyword">public</span> <span class="token class-name">Book</span> <span class="token function">create</span><span class="token punctuation">(</span><span class="token class-name">String</span> author<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token class-name">System</span><span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>repository<span class="token punctuation">.</span><span class="token function">getClass</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> repository<span class="token punctuation">.</span><span class="token function">create</span><span class="token punctuation">(</span>author<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></code></pre>
+						<p>BookManager 클래스에서, create메소드가 @Transactional 어노테이션이 붙은 것을 확인할 수 있습니다.<br />
+							해당 어노테이션은 스프링이 create 메소드를 원자적으로 실행하도록 안내합니다.<br />
+							프록시가 없다면 스프링은 BookRepository 빈에 대한 접근 제어나 트랜잭션 동일성에 대한 확신을 할 수 없게 됩니다.</p>
+						<h3 id="cglib-proxies">CGLib Proxies</h3>
+						<p>대신에, 스프링은 BookRepository 빈을 감싸고 있는 프록시를 생성하고 원자적으로 create 메소드를 실행하도록 지시합니다.<br />
+							BookManager#create 메소드를 실행할 때 아래와 같은 출력을 볼 수 있습니다.</p>
+						<blockquote>
+							<p>com.baeldung.patterns.proxy.BookRepository$$EnhancerBySpringCGLIB$$3dc2b55c</p>
+						</blockquote>
+						<p>전형적으로, 표준 BookRepository 객체 ID를 찾게 되지만, EnhancerBySpringCGLIB 객체 ID를 바라보고 있습니다.<br />
+							스프링은 BookRepository 객체를 EnhancerBySpringCGLIB 안에 감싸져 있도록 합니다.<br />
+							<img src="https://media.vlpt.us/images/dev_osj/post/c9264081-cfff-47b3-ad76-d83a6d5a850d/image.png" /></p>
+						<p>전형적으로 스프링은 두 가지 종류의 프록시를 사용합니다.</p>
+						<ol>
+							<li>CGLib Proxies : 클래스들을 프록시할 때 사용</li>
+							<li>JDK Dynamic Proxies : 인터페이스를 프록시할 때 사용</li>
+						</ol>
+						<p>트랜잭션을 사용하여 위와 같은 프록시들을 노출시킬 때, 스프링은 빈들에 대한 접근을 제어하기 위한 어떤 시나리오에서도 프록시들을 사용할 것 입니다.<br />
+							<br /></p>
+						<h2 id="template-method-pattern">Template Method Pattern</h2>
+						<p>다양한 프레임워크에서 코드의 중요한 부분은 boilerplate(https://en.wikipedia.org/wiki/Boilerplate_code) 코드입니다.<br />
+							예를 들어, 데이터베이스에서 쿼리를 실행할 때, 동일한 형태의 단계가 완료되어야만 합니다.</p>
+						<ol>
+							<li>커넥션 발생</li>
+							<li>쿼리 실행</li>
+							<li>초기화 수행</li>
+							<li>커넥션 종료</li>
+						</ol>
+						<p>이러한 단계들이 template method pattern의 이상적인 시나리오 입니다.</p>
+						<h3 id="templates--callbacks">Templates &amp; Callbacks</h3>
+						<p>template method pattern은 어떠한 행동을 위한 단계들을 정의하고, boilerplate 단계들을 실행하고, 추상화된 커스텀 단계들을 종료할 때 사용하는 기술입니다.<br />
+							서브클래스들은 이러한 추상화 클래스들을 실행할 수 있고 놓친 단계들을 위한 구체적인 실행을 제공할 수 있습니다.<br />
+							데이터베이스 쿼리의 케이스들에서 템플릿을 생성할 수 있습니다.</p>
+						<pre><code class="language-java"><span class="token keyword">public</span> <span class="token keyword">abstract</span> <span class="token class-name">DatabaseQuery</span> <span class="token punctuation">{</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">execute</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token class-name">Connection</span> connection <span class="token operator">=</span> <span class="token function">createConnection</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token function">executeQuery</span><span class="token punctuation">(</span>connection<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token function">closeConnection</span><span class="token punctuation">(</span>connection<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">protected</span> <span class="token class-name">Connection</span> <span class="token function">createConnection</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// Connect to database...</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">protected</span> <span class="token keyword">void</span> <span class="token function">closeConnection</span><span class="token punctuation">(</span><span class="token class-name">Connection</span> connection<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// Close connection...</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">protected</span> <span class="token keyword">abstract</span> <span class="token keyword">void</span> <span class="token function">executeQuery</span><span class="token punctuation">(</span><span class="token class-name">Connection</span> connection<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+						<p>다른 대안으로, 콜백 메소드를 제공하여 놓친 단계를 제공할 수 있습니다.<br />
+							콜백 메소드는 서브젝트가 어떤 액션을 끝내기를 원하는 클라이언트에게 신호를 줄 수 있도록 하는 메소드입니다.<br />
+							이러한 케이스들에서, 서브젝트는 mapping result와 같은 액션을 취할 수 있도록 콜백을 사용할 수 있습니다.<br />
+							<img src="https://media.vlpt.us/images/dev_osj/post/b61d568b-a0a8-43f0-a023-57235abad183/image.png" /></p>
+						<p>예를 들어, executeQuery 메소드를 가지는 대신, execute 메소드를 쿼리 문자열과 결과를 다룰 콜백 메소드를 제공해야 합니다.</p>
+						<p>첫번째로, Results 객체와 T 타입의 객체를 받을 수 있는 콜백 메소드를 생성합니다.</p>
+						<pre><code class="language-java"><span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">ResultsMapper</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">T</span><span class="token punctuation">&gt;</span></span> <span class="token punctuation">{</span>
+    <span class="token keyword">public</span> <span class="token class-name">T</span> <span class="token function">map</span><span class="token punctuation">(</span><span class="token class-name">Results</span> results<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+						<p>다음으로, 콜백을 사용할 수 있도록 DatabaseQuery 클래스를 변경합니다.</p>
+						<pre><code class="language-java"><span class="token keyword">public</span> <span class="token keyword">abstract</span> <span class="token class-name">DatabaseQuery</span> <span class="token punctuation">{</span>
+
+    <span class="token keyword">public</span> <span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">T</span><span class="token punctuation">&gt;</span></span> <span class="token class-name">T</span> <span class="token function">execute</span><span class="token punctuation">(</span><span class="token class-name">String</span> query<span class="token punctuation">,</span> <span class="token class-name">ResultsMapper</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">T</span><span class="token punctuation">&gt;</span></span> mapper<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token class-name">Connection</span> connection <span class="token operator">=</span> <span class="token function">createConnection</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">Results</span> results <span class="token operator">=</span> <span class="token function">executeQuery</span><span class="token punctuation">(</span>connection<span class="token punctuation">,</span> query<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token function">closeConnection</span><span class="token punctuation">(</span>connection<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> mapper<span class="token punctuation">.</span><span class="token function">map</span><span class="token punctuation">(</span>results<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">]</span>
+
+    <span class="token keyword">protected</span> <span class="token class-name">Results</span> <span class="token function">executeQuery</span><span class="token punctuation">(</span><span class="token class-name">Connection</span> connection<span class="token punctuation">,</span> <span class="token class-name">String</span> query<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// Perform query...</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></code></pre>
+						<p>이러한 콜백 매카니즘은 스프링에서 JdbcTemplate 클래스를 사용할 때의 접근 방법입니다.</p>
+						<h3 id="jdbctemplate">JdbcTemplate</h3>
+						<p>JdbcTemplate 클래스는 쿼리 String과 ResultSetExtractor 객체를 받을 query 메소드를 제공합니다.</p>
+						<pre><code class="language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">JdbcTemplate</span> <span class="token punctuation">{</span>
+
+    <span class="token keyword">public</span> <span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">T</span><span class="token punctuation">&gt;</span></span> <span class="token class-name">T</span> <span class="token function">query</span><span class="token punctuation">(</span><span class="token keyword">final</span> <span class="token class-name">String</span> sql<span class="token punctuation">,</span> <span class="token keyword">final</span> <span class="token class-name">ResultSetExtractor</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">T</span><span class="token punctuation">&gt;</span></span> rse<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">DataAccessException</span> <span class="token punctuation">{</span>
+        <span class="token comment">// Execute query...</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">// Other methods...</span>
+<span class="token punctuation">}</span></code></pre>
+						<p>ResultSetExtractor는 T타입의 도메인 객체에서 ResultSet 객체(쿼리의 결과를 보여주는)로 변환해야 합니다.</p>
+						<pre><code class="language-java"><span class="token annotation punctuation">@FunctionalInterface</span>
+<span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">ResultSetExtractor</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">T</span><span class="token punctuation">&gt;</span></span> <span class="token punctuation">{</span>
+    <span class="token class-name">T</span> <span class="token function">extractData</span><span class="token punctuation">(</span><span class="token class-name">ResultSet</span> rs<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">SQLException</span><span class="token punctuation">,</span> <span class="token class-name">DataAccessException</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+						<p>스프링은 더 나아가 조금 더 구체적인 콜백 인터페이스 생성에 의해 boilerplate코드를 감소시킬 수 있습니다.<br />
+							예를 들어, RowMapper 인터페이스는 T 타입의 도메인 객체에서 한줄의 SQL 데이터로 변환할 때 사용합니다.</p>
+						<pre><code class="language-java"><span class="token annotation punctuation">@FunctionalInterface</span>
+<span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">RowMapper</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">T</span><span class="token punctuation">&gt;</span></span> <span class="token punctuation">{</span>
+    <span class="token class-name">T</span> <span class="token function">mapRow</span><span class="token punctuation">(</span><span class="token class-name">ResultSet</span> rs<span class="token punctuation">,</span> <span class="token keyword">int</span> rowNum<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">SQLException</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+						<p>RowMapper 인터페이스를 예정된 ResultSetExtractor를 실행하기 위해, 스프링은 RowMapperResultSetExtractor 클래스를 생성합니다.</p>
+						<pre><code class="language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">JdbcTemplate</span> <span class="token punctuation">{</span>
+
+    <span class="token keyword">public</span> <span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">T</span><span class="token punctuation">&gt;</span></span> <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">T</span><span class="token punctuation">&gt;</span></span> <span class="token function">query</span><span class="token punctuation">(</span><span class="token class-name">String</span> sql<span class="token punctuation">,</span> <span class="token class-name">RowMapper</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">T</span><span class="token punctuation">&gt;</span></span> rowMapper<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">DataAccessException</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token function">result</span><span class="token punctuation">(</span><span class="token function">query</span><span class="token punctuation">(</span>sql<span class="token punctuation">,</span> <span class="token keyword">new</span> <span class="token class-name">RowMapperResultSetExtractor</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span>rowMapper<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">// Other methods...</span>
+<span class="token punctuation">}</span></code></pre>
+						<p>row들에 대한 순회 반복을 포함하여 전체 ResultSet 객체를 변경하는 로직을 제공하는 대신, 어떻게 하나의 row를 변경하기 위한 로직을 제공할 수 있습니다.</p>
+						<pre><code class="language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">BookRowMapper</span> <span class="token keyword">implements</span> <span class="token class-name">RowMapper</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Book</span><span class="token punctuation">&gt;</span></span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token class-name">Book</span> <span class="token function">mapRow</span><span class="token punctuation">(</span><span class="token class-name">ResultSet</span> rs<span class="token punctuation">,</span> <span class="token keyword">int</span> rowNum<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">SQLException</span> <span class="token punctuation">{</span>
+
+        <span class="token class-name">Book</span> book <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Book</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        book<span class="token punctuation">.</span><span class="token function">setId</span><span class="token punctuation">(</span>rs<span class="token punctuation">.</span><span class="token function">getLong</span><span class="token punctuation">(</span><span class="token string">"id"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        book<span class="token punctuation">.</span><span class="token function">setTitle</span><span class="token punctuation">(</span>rs<span class="token punctuation">.</span><span class="token function">getString</span><span class="token punctuation">(</span><span class="token string">"title"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        book<span class="token punctuation">.</span><span class="token function">setAuthor</span><span class="token punctuation">(</span>rs<span class="token punctuation">.</span><span class="token function">getString</span><span class="token punctuation">(</span><span class="token string">"author"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token keyword">return</span> book<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></code></pre>
+						<p>이런 컨버터와 함께 JdbcTemplate을 사용하여 데이터베이스에 쿼리를 전송할 수 있고 각각의 결과 row에 매핑할 수 있습니다.</p>
+						<pre><code class="language-java"><span class="token class-name">JdbcTemplate</span> template <span class="token operator">=</span> <span class="token comment">// create template...</span>
+template<span class="token punctuation">.</span><span class="token function">query</span><span class="token punctuation">(</span><span class="token string">"SELECT * FROM books"</span><span class="token punctuation">,</span> <span class="token keyword">new</span> <span class="token class-name">BookRowMapper</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+						<p>JDBC 데이터베이스 관리와 별개로 스프링은 아래와 같은 것에 탬플릿을 사용합니다.</p>
+						<ol>
+							<li>Java Message Service (JMS)</li>
+							<li>JAVA Persistence API (JPA)</li>
+							<li>Hibernate (현재 deprecated됨)</li>
+							<li>Transactions</li>
+						</ol>
+					</div>
+				</div>
+			</div>
+		
